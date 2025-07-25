@@ -1,0 +1,198 @@
+{
+  "name": "Google Nest Cam Configurable Record",
+  "nodes": [
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "projectId",
+              "value": "YOUR_PROJECT_ID"
+            },
+            {
+              "name": "storagePath",
+              "value": "/home/user/videos"
+            }
+          ],
+          "number": [
+            {
+              "name": "maxStorageDays",
+              "value": 7
+            },
+            {
+              "name": "clipInterval",
+              "value": 30
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": false
+        }
+      },
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "interval": "={{Math.min($node['Configuration'].json.clipInterval, 300)}}",
+        "unit": "seconds"
+      },
+      "name": "Loop Timer",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "url": "https://smartdevicemanagement.googleapis.com/v1/enterprises/{{$node['Configuration'].json.projectId}}/devices",
+        "options": {}
+      },
+      "name": "Get Devices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [660, 300],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "YOUR_OAUTH2_CREDENTIAL_ID",
+          "name": "Google SDM OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "deviceId",
+              "value": "={{$node['Get Devices'].json.devices[0].name}}"
+            },
+            {
+              "name": "cameraName",
+              "value": "={{$node['Get Devices'].json.devices[0].traits['sdm.devices.traits.Info'].customName}}"
+            }
+          ]
+        }
+      },
+      "name": "Set Device Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "command": "mkdir -p {{$node['Configuration'].json.storagePath}}/{{$node['Set Device Info'].json.cameraName}}"
+      },
+      "name": "Create Camera Folder",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [860, 500]
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "command": "find {{$node['Configuration'].json.storagePath}}/{{$node['Set Device Info'].json.cameraName}} -type f -mtime +{{$node['Configuration'].json.maxStorageDays}} -delete"
+      },
+      "name": "Delete Old Clips",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [860, 700]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://smartdevicemanagement.googleapis.com/v1/{{$node['Set Device Info'].json.deviceId}}:executeCommand",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"command\": \"sdm.devices.commands.CameraLiveStream.GenerateWebRtcStream\", \"params\": {\"offerSdp\": \"v=0\\r\\no=- 123456789 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\nm=audio 9 UDP/TLS/RTP/SAVPF 111\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:6ReD\\r\\na=ice-pwd:QBmcZYd/t+InpMVkxQEEXnE4\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha-256 DD:7E:6F:CD:B8:13:4E:37:D2:92:6D:8E:30:FB:FE:13:29:C9:F8:FD:78:0B:C4:59:42:61:BC:CF:02:91:6B:3C\\r\\na=setup:actpass\\r\\na=mid:0\\r\\na=recvonly\\r\\na=rtcp-mux\\r\\na=rtpmap:111 opus/48000/2\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:6ReD\\r\\na=ice-pwd:QBmcZYd/t+InpMVkxQEEXnE4\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha-256 DD:7E:6F:CD:B8:13:4E:37:D2:92:6D:8E:30:FB:FE:13:29:C9:F8:FD:78:0B:C4:59:42:61:BC:CF:02:91:6B:3C\\r\\na=setup:actpass\\r\\na=mid:1\\r\\n\"}}"
+      },
+      "name": "Generate WebRTC Stream",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1060, 300],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "YOUR_OAUTH2_CREDENTIAL_ID",
+          "name": "Google SDM OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -i \"{{$node['Generate WebRTC Stream'].json.results.answerSdp}}\" -t {{Math.min($node['Configuration'].json.clipInterval, 300)}} -c:v copy -c:a aac -f mp4 {{$node['Configuration'].json.storagePath}}/{{$node['Set Device Info'].json.cameraName}}/video_$(date +%Y%m%d_%H%M%S).mp4"
+      },
+      "name": "Capture Video Clip",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1260, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://smartdevicemanagement.googleapis.com/v1/{{$node['Set Device Info'].json.deviceId}}:executeCommand",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"command\": \"sdm.devices.commands.CameraLiveStream.ExtendWebRtcStream\", \"params\": {\"offerSdp\": \"{{$node['Generate WebRTC Stream'].json.results.answerSdp}}\"}}"
+      },
+      "name": "Extend WebRTC Stream",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1260, 500],
+      "executeOnce": false,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": true,
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1460, 300]
+    }
+  ],
+  "connections": {
+    "Configuration": {
+      "main": [[{"node": "Loop Timer", "type": "main", "index": 0}]]
+    },
+    "Loop Timer": {
+      "main": [[{"node": "Get Devices", "type": "main", "index": 0}]]
+    },
+    "Get Devices": {
+      "main": [[{"node": "Set Device Info", "type": "main", "index": 0}]]
+    },
+    "Set Device Info": {
+      "main": [[{"node": "Generate WebRTC Stream", "type": "main", "index": 0}, {"node": "Create Camera Folder", "type": "main", "index": 0}, {"node": "Delete Old Clips", "type": "main", "index": 0}]]
+    },
+    "Create Camera Folder": {
+      "main": [[]]
+    },
+    "Delete Old Clips": {
+      "main": [[]]
+    },
+    "Generate WebRTC Stream": {
+      "main": [[{"node": "Capture Video Clip", "type": "main", "index": 0}, {"node": "Extend WebRTC Stream", "type": "main", "index": 0}]]
+    },
+    "Capture Video Clip": {
+      "main": [[{"node": "Loop Back", "type": "main", "index": 0}]]
+    },
+    "Extend WebRTC Stream": {
+      "main": [[]]
+    },
+    "Loop Back": {
+      "main": [[{"node": "Generate WebRTC Stream", "type": "main", "index": 0}]]
+    }
+  }
+}
