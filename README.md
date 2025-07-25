@@ -140,9 +140,9 @@ This n8n workflow captures video clips from a single Google Nest Cam (wired) usi
 
 ## Notes
 - **Storage**:
-  - 30-second clips: ~7.5 MB each, ~86 GB for 30 days.
-  - 5-minute clips: ~75 MB each, ~600 GB for 30 days.
-  - `maxStorageDays: 7` reduces usage (e.g., ~20 GB for 30-second clips).
+  - 30-second clips: ~8 MB each, ~690 GB for 30 days.
+  - 5-minute clips: ~80 MB each, ~690 GB for 30 days.
+  - `maxStorageDays: 7` reduces usage (e.g., ~161 GB for 30-second clips).
 - **Performance**:
   - FFmpeg is CPU-intensive. Monitor with Activity Monitor (macOS), `htop` (Linux), or Task Manager (Windows).
   - Use a modern CPU (e.g., M1/M2 on macOS) for better performance.
