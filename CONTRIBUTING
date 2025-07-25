@@ -1,0 +1,22 @@
+# Contributing to n8n Google Nest Cam Template
+
+Thank you for your interest in contributing! We welcome improvements, bug fixes, and new features.
+
+## How to Contribute
+1. Fork the repository.
+2. Create a branch: `git checkout -b feature/your-feature`.
+3. Make changes and test thoroughly.
+4. Commit changes: `git commit -m "Add your feature"`.
+5. Push to your fork: `git push origin feature/your-feature`.
+6. Open a pull request with a clear description.
+
+## Guidelines
+- Ensure compatibility with n8n 1.50.0+.
+- Test with a Google Nest Cam (wired).
+- Update README with any new setup steps.
+- Follow the MIT License.
+
+## Issues
+- Report bugs or suggest features via GitHub Issues.
+
+Thank you for making this workflow better!
