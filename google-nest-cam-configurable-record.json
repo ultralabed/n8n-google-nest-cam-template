@@ -1,5 +1,13 @@
 {
   "name": "Google Nest Cam Configurable Record",
+  "meta": {
+    "description": "Captures video clips from a Google Nest Cam (wired) using the SDM API, saving them locally with configurable intervals and storage duration.",
+    "categories": ["Google", "Video", "Automation"],
+    "author": "ultralabed",
+    "version": "1.0.0",
+    "createdAt": "2025-07-25",
+    "license": "MIT"
+  },
   "nodes": [
     {
       "parameters": {
